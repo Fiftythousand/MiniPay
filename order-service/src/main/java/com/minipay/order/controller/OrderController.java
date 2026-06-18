@@ -1,36 +1,39 @@
 package com.minipay.order.controller;
 
-import com.minipay.order.mapper.OrderMapper;
-import org.springframework.http.ResponseEntity;
+import com.minipay.common.req.OrderReq;
+import com.minipay.common.resp.CommonResp;
+import com.minipay.order.model.Order;
+import com.minipay.order.service.OrderService;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/orders")
 public class OrderController {
 
-    private final OrderMapper orderMapper;
-
-    public OrderController(OrderMapper orderMapper) {
-        this.orderMapper = orderMapper;
-    }
+    @Resource
+    private OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createOrder(@RequestBody Map<String, Object> request) {
-        // TODO: 创建订单
-        return null;
+    public CommonResp<Order> createOrder(@RequestBody OrderReq req) {
+        Order order = orderService.createOrder(BigDecimal.valueOf(req.getAmount()), "");
+        return new CommonResp<>(200, "创建成功", order, true);
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<Map<String, Object>> getOrder(@PathVariable String orderId) {
-        // TODO: 查询订单
-        return null;
+    public CommonResp<Order> getOrder(@PathVariable("orderId") String orderId) {
+        Order order = orderService.getOrder(orderId);
+        if (order == null) {
+            return new CommonResp<>(404, "订单不存在", null, false);
+        }
+        return new CommonResp<>(200, "查询成功", order, true);
     }
 
     @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> health() {
-        // TODO: 健康检查
-        return null;
+    public CommonResp<String> health() {
+        String result = orderService.health();
+        return new CommonResp<>(200, "success", result, true);
     }
 }
