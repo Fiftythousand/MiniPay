@@ -5,14 +5,16 @@ spring:
   application:
     name: payment-service
   datasource:
-    url: jdbc:mysql://localhost:3306/minipay_payment?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: ${MYSQL_USERNAME:root}
-    password: ${MYSQL_PASSWORD:}
+    url: jdbc:mysql://8.137.58.214:3306/minipay_payment?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: minipay_payment
+    password: minipay_payment
     driver-class-name: com.mysql.cj.jdbc.Driver
   cloud:
     nacos:
       discovery:
         server-addr: nacos.linqin.space
+        username: nacos
+        password: nacos
 
 mybatis-plus:
   mapper-locations: classpath:/mapper/*.xml

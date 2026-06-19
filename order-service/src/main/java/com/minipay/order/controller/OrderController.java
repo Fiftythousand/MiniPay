@@ -8,6 +8,7 @@ import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -29,6 +30,19 @@ public class OrderController {
             return new CommonResp<>(404, "订单不存在", null, false);
         }
         return new CommonResp<>(200, "查询成功", order, true);
+    }
+
+    @PutMapping("/{orderId}/status")
+    public CommonResp<Order> updateOrderStatus(@PathVariable("orderId") String orderId, @RequestBody Map<String, String> req) {
+        String status = req.get("status");
+        if (status == null || status.isEmpty()) {
+            return new CommonResp<>(400, "状态不能为空", null, false);
+        }
+        Order order = orderService.updateOrderStatus(orderId, status);
+        if (order == null) {
+            return new CommonResp<>(404, "订单不存在或状态非法", null, false);
+        }
+        return new CommonResp<>(200, "状态更新成功", order, true);
     }
 
     @GetMapping("/health")
