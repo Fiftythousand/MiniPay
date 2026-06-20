@@ -1,6 +1,6 @@
 package com.minipay.payment.controller;
 
-import com.minipay.common.req.OrderReq;
+import com.minipay.common.req.PaymentReq;
 import com.minipay.common.resp.CommonResp;
 import com.minipay.payment.model.Payment;
 import com.minipay.payment.service.PaymentService;
@@ -17,20 +17,27 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PostMapping
-    public CommonResp<Payment> createPayment(@RequestBody OrderReq req) {
+    public CommonResp<Payment> createPayment(@RequestBody PaymentReq req) {
+        if (req.getOrderId() == null || req.getOrderId().isEmpty()) {
+            return new CommonResp<>(400, "订单ID不能为空", null, false);
+        }
+        if (req.getAmount() == null || req.getAmount() <= 0) {
+            return new CommonResp<>(400, "金额必须大于0", null, false);
+        }
+        
         BigDecimal amount = new BigDecimal(req.getAmount().toString());
-        Payment payment = paymentService.createpayment(amount);
-        return new CommonResp<>(200, "创建成功", payment, true);
+        Payment payment = paymentService.createPayment(req.getOrderId(), amount);
+        
+        String message = "SUCCESS".equals(payment.getStatus()) ? "支付成功" : "支付失败";
+        return new CommonResp<>(200, message, payment, true);
     }
 
-    // 根据orderId查询支付订单
     @GetMapping("/{orderId}")
     public CommonResp<Payment> getPaymentByOrderId(@PathVariable("orderId") String orderId) {
         Payment payment = paymentService.getPaymentByOrderId(orderId);
         return paymentResult(payment);
     }
 
-    // 根据paymentId查询支付订单
     @GetMapping("/detail/{paymentId}")
     public CommonResp<Payment> getPaymentByPaymentId(@PathVariable("paymentId") String paymentId) {
         Payment payment = paymentService.getPaymentByPaymentId(paymentId);
@@ -43,7 +50,6 @@ public class PaymentController {
         return new CommonResp<>(200, "success", result, true);
     }
 
-    // 统一支付结果判断
     private CommonResp<Payment> paymentResult(Payment payment) {
         if (payment == null) {
             return new CommonResp<>(404, "该支付订单不存在", null, false);
