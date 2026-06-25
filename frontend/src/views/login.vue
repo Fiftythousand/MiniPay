@@ -53,15 +53,15 @@ export default defineComponent({
       axios.post("/api/login/login", loginForm).then((response) => {
         let data = response.data;
         if(data.success) {
-          notification.success({ description: '登录成功！' });
+          localStorage.setItem('token', data.data.token);
+          let msg = data.data.newUser ? '新用户注册成功，欢迎使用！' : '登录成功！';
+          notification.success({ description: msg });
           router.push('/create');
         } else {
           notification.error({ description: data.message });
         }
-        console.log('login', loginForm);
       }).catch((error) => {
         let msg = error.response?.data?.message || '登录失败，请稍后重试';
-        console.log(error.response);
         notification.error({ description: msg });
       });
     };

@@ -3,7 +3,6 @@ package com.minipay.gateway;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.crypto.GlobalBouncyCastleProvider;
-import cn.hutool.extra.pinyin.PinyinUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTPayload;
 import cn.hutool.jwt.JWTUtil;
@@ -12,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static java.lang.System.currentTimeMillis;
 
 /**
  *  JWT工具类，负责生成和验证JWT令牌
@@ -25,8 +22,7 @@ public class JwtUtil {
     /**
      * 盐值
      */
-    private static final String KEY_CN = "原神牛逼";
-    private static final String KEY = PinyinUtil.getPinyin(KEY_CN, "").replace(" ", "");
+    private static final String KEY = "yuanshenniubi";
 
     public static String createToken(Long userId) {
         DateTime nowTime = new DateTime();

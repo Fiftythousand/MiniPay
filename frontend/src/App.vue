@@ -1,11 +1,11 @@
 <template>
   <div id="app">
-    <nav class="navbar">
+    <nav class="navbar" v-if="$route.name !== 'Login'">
       <div class="navbar-brand">
         <h1>MiniPay</h1>
       </div>
       <div class="navbar-nav">
-        <router-link to="/" :class="{ active: $route.name === 'CreateOrder' }">创建订单</router-link>
+        <router-link to="/create" :class="{ active: $route.name === 'CreateOrder' }">创建订单</router-link>
         <router-link to="/query" :class="{ active: $route.name === 'QueryResult' }">结果查询</router-link>
       </div>
     </nav>

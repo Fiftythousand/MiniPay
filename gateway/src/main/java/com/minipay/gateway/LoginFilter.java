@@ -9,16 +9,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import org.springframework.stereotype.Component;
+
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 public class LoginFilter implements GlobalFilter, Ordered {
 
     private static final Logger LOG = LoggerFactory.getLogger(LoginFilter.class);
 
     private static final List<String> WHITE_LIST = Arrays.asList(
             "/admin",
-            "/api/",
+            "/api/login",
             "/api/payments/health",
             "/api/orders/health"
     );
