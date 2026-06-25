@@ -7,6 +7,7 @@
       <div class="navbar-nav">
         <router-link to="/create" :class="{ active: $route.name === 'CreateOrder' }">创建订单</router-link>
         <router-link to="/query" :class="{ active: $route.name === 'QueryResult' }">结果查询</router-link>
+        <a class="logout-btn" @click="logout">退出登录</a>
       </div>
     </nav>
     <main class="main-content">
@@ -16,8 +17,20 @@
 </template>
 
 <script>
+import { useRouter } from 'vue-router'
+
 export default {
-  name: 'App'
+  name: 'App',
+  setup() {
+    const router = useRouter()
+
+    function logout() {
+      localStorage.removeItem('token')
+      router.push('/')
+    }
+
+    return { logout }
+  }
 }
 </script>
 
@@ -65,6 +78,20 @@ body {
 
 .navbar-nav a:hover,
 .navbar-nav a.active {
+  background: rgba(255,255,255,0.2);
+}
+
+.logout-btn {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.3s;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
   background: rgba(255,255,255,0.2);
 }
 

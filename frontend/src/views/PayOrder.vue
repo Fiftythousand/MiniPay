@@ -215,7 +215,7 @@ export default {
     }
 
     const goBack = () => {
-      window.location.href = '/'
+      window.location.href = '/create'
     }
 
     const queryStatus = () => {

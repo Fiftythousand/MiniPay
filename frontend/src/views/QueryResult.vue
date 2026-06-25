@@ -355,13 +355,13 @@ h2 { color: #333; margin-bottom: 1.5rem; font-size: 1.5rem; border-bottom: 2px s
 .refresh-btn:hover:not(:disabled) { background: #e0e0e0; }
 .refresh-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.table-wrapper { overflow-x: auto; }
+.table-wrapper { overflow-y: auto; overflow-x: hidden; max-height: 500px; scrollbar-width: thin; }
 .history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .history-table th, .history-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
 .history-table th { background: #f9f9f9; color: #555; font-weight: 600; }
 .history-table tr:hover { background: #fafafa; }
 
-.status-tag { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; }
+.status-tag { padding: 0.2rem 0.6rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; white-space: nowrap; display: inline-block; }
 .status-tag.pending { background: #fff3cd; color: #856404; }
 .status-tag.paid { background: #d4edda; color: #155724; }
 .status-tag.failed { background: #f8d7da; color: #721c24; }

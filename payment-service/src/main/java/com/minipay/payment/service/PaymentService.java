@@ -64,13 +64,14 @@ public class PaymentService {
         return payment;
     }
 
-    private void updateOrderStatus(String orderId, String status) {
+    private void updateOrderStatus(String orderId, String paymentStatus) {
         try {
+            String orderStatus = "SUCCESS".equals(paymentStatus) ? "PAID" : paymentStatus;
             String url = ORDER_SERVICE_URL + "/" + orderId + "/status";
             Map<String, String> request = new HashMap<>();
-            request.put("status", status);
+            request.put("status", orderStatus);
 
-            LOG.info("通知订单服务更新状态, orderId: {}, status: {}", orderId, status);
+            LOG.info("通知订单服务更新状态, orderId: {}, status: {}", orderId, orderStatus);
             restTemplate.put(url, request);
         } catch (Exception e) {
             LOG.error("通知订单服务失败, orderId: {}, error: {}", orderId, e.getMessage());
