@@ -3,6 +3,8 @@ package com.minipay.order.model;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -78,5 +80,15 @@ public class Order {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    @Data
+    @TableName("t_user")
+    public static class User {
+
+        @TableId(type = IdType.AUTO)
+        private Long id;
+
+        private String mobile;
     }
 }

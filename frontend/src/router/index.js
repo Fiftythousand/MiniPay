@@ -2,10 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 import CreateOrder from '@/views/CreateOrder.vue'
 import PayOrder from '@/views/PayOrder.vue'
 import QueryResult from '@/views/QueryResult.vue'
+import Login from '@/views/login.vue';
 
 const routes = [
   {
     path: '/',
+    name: 'Login',
+    component: Login
+  },{
+    path: '/create',
     name: 'CreateOrder',
     component: CreateOrder
   },
