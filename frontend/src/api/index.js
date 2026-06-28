@@ -31,5 +31,5 @@ export const getOrder = (orderId) => api.get(`/orders/${orderId}`)
 export const updateOrderStatus = (orderId, status) => api.put(`/orders/${orderId}/status`, { status })
 export const createPayment = (data) => api.post('/payments', data)
 export const getPayment = (orderId) => api.get(`/payments/${orderId}`)
-// 获取所有历史订单列表
+export const queryPaymentStatus = (orderId) => api.get(`/payments/${orderId}/status`)
 export const getOrderList = () => api.get('/orders')

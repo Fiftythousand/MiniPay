@@ -26,14 +26,51 @@
         </div>
       </div>
 
+      <!-- 支付方式选择 -->
       <div v-if="showPayButton" class="pay-section">
-        <button @click="handlePay" :disabled="paying.value" class="pay-btn">
-          <span v-if="paying.value" class="loading"></span>
-          {{ paying.value ? '支付中...' : '发起支付' }}
+        <div class="pay-type-selector">
+          <button 
+            :class="['pay-type-btn', { active: payType === 'alipay' }]"
+            @click="payType = 'alipay'"
+          >
+            <span class="pay-icon">💙</span>
+            支付宝支付
+          </button>
+          <button 
+            :class="['pay-type-btn', { active: payType === 'mock' }]"
+            @click="payType = 'mock'"
+          >
+            <span class="pay-icon">🎮</span>
+            模拟支付
+          </button>
+        </div>
+        
+        <button @click="handlePay" :disabled="paying" class="pay-btn">
+          <span v-if="paying" class="loading"></span>
+          {{ paying ? '支付中...' : '立即支付' }}
         </button>
       </div>
 
-      <div v-if="paymentModal.value" class="modal-overlay" @click="closeModal">
+      <!-- 支付宝二维码展示 -->
+      <div v-if="showQRCode" class="qr-section">
+        <h3>支付宝扫码支付</h3>
+        <div class="qr-container">
+          <img :src="qrCodeImage" alt="支付宝二维码" class="qr-image" />
+        </div>
+        <p class="qr-tip">请使用支付宝扫描二维码完成支付</p>
+        <p class="amount">¥{{ order.amount ? order.amount.toFixed(2) : '0.00' }}</p>
+        
+        <div class="qr-actions">
+          <button @click="queryPayResult" :disabled="querying" class="check-btn">
+            {{ querying ? '查询中...' : '我已支付，查询结果' }}
+          </button>
+          <button @click="refreshQRCode" class="refresh-btn">刷新二维码</button>
+          <button @click="cancelPay" class="cancel-btn">取消支付</button>
+        </div>
+      </div>
+
+      <!-- 模拟支付弹窗 -->
+      <div v-if="showMockModal" class="modal-overlay" @click="closeModal">
         <div class="modal-content" @click.stop>
           <div class="modal-header">
             <h3>模拟支付</h3>
@@ -44,55 +81,38 @@
               <p>订单号：{{ order.orderId }}</p>
               <p>支付金额：¥{{ order.amount ? order.amount.toFixed(2) : '0.00' }}</p>
             </div>
-            <div class="payment-form">
-              <div class="form-group">
-                <label for="cardNo">卡号</label>
-                <input id="cardNo" v-model="paymentForm.cardNo" type="text" placeholder="请输入银行卡号" />
-              </div>
-              <div class="form-group">
-                <label for="expiry">有效期</label>
-                <input id="expiry" v-model="paymentForm.expiry" type="text" placeholder="MM/YY" />
-              </div>
-              <div class="form-group">
-                <label for="cvv">CVV</label>
-                <input id="cvv" v-model="paymentForm.cvv" type="text" placeholder="安全码" />
-              </div>
-              <div class="form-group">
-                <label for="password">支付密码</label>
-                <input id="password" v-model="paymentForm.password" type="password" placeholder="请输入支付密码" />
-              </div>
+            <div class="mock-result">
+              <p>点击按钮模拟支付结果（80%成功率）</p>
+              <button @click="confirmMockPayment" :disabled="processing" class="confirm-btn">
+                {{ processing ? '处理中...' : '确认支付' }}
+              </button>
             </div>
-            <button @click="confirmPayment" :disabled="processing.value" class="confirm-btn">
-              <span v-if="processing.value" class="loading"></span>
-              {{ processing.value ? '处理中...' : '确认支付' }}
-            </button>
           </div>
         </div>
       </div>
 
-      <div v-if="paymentResult.value" class="result-section">
-        <div :class="['result-card', paymentResult.value.status ? paymentResult.value.status.toLowerCase() : '']">
+      <!-- 支付结果 -->
+      <div v-if="paymentResult" class="result-section">
+        <div :class="['result-card', paymentResult.status ? paymentResult.status.toLowerCase() : '']">
           <div class="result-icon">
-            <span v-if="paymentResult.value.status === 'SUCCESS'">✓</span>
+            <span v-if="paymentResult.status === 'SUCCESS'">✓</span>
             <span v-else>✗</span>
           </div>
-          <h3>{{ paymentResult.value.status === 'SUCCESS' ? '支付成功' : '支付失败' }}</h3>
-          <p v-if="paymentResult.value.status === 'SUCCESS'">
-            支付金额：¥{{ paymentResult.value.amount?.toFixed(2) || (order.amount ? order.amount.toFixed(2) : '0.00') }}
+          <h3>{{ paymentResult.status === 'SUCCESS' ? '支付成功' : '支付失败' }}</h3>
+          <p v-if="paymentResult.status === 'SUCCESS'">
+            支付金额：¥{{ order.amount ? order.amount.toFixed(2) : '0.00' }}
           </p>
-          <p v-if="paymentResult.value.paymentId">支付流水号：{{ paymentResult.value.paymentId }}</p>
-          <p v-if="paymentResult.value.message">{{ paymentResult.value.message }}</p>
+          <p v-if="paymentResult.paymentId">支付流水号：{{ paymentResult.paymentId }}</p>
           <div class="result-actions">
             <button @click="goBack" class="back-btn">返回首页</button>
-            <button @click="queryStatus" class="query-btn">查看详情</button>
           </div>
         </div>
       </div>
 
-      <div v-if="errorMessage.value" class="error-message">{{ errorMessage.value }}</div>
+      <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
     </div>
 
-    <div v-else-if="loading.value" class="loading-container">
+    <div v-else-if="loading" class="loading-container">
       <div class="loading"></div>
       <p>加载订单信息...</p>
     </div>
@@ -105,482 +125,226 @@
 </template>
 
 <script>
-import { reactive, computed, onMounted } from 'vue'
-import { getOrder, createPayment } from '../api'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getOrder, createPayment, queryPaymentStatus } from '../api'
 
 export default {
   name: 'PayOrder',
   setup() {
-    const order = reactive({})
-    const loading = reactive({ value: true })
-    const paying = reactive({ value: false })
-    const processing = reactive({ value: false })
-    const paymentModal = reactive({ value: false })
-    const paymentResult = reactive({ value: null })
-    const errorMessage = reactive({ value: '' })
+    const route = useRoute()
+    const router = useRouter()
     
-    const paymentForm = reactive({
-      cardNo: '',
-      expiry: '',
-      cvv: '',
-      password: ''
+    const order = ref(null)
+    const loading = ref(true)
+    const paying = ref(false)
+    const processing = ref(false)
+    const querying = ref(false)
+    const errorMessage = ref('')
+    const payType = ref('alipay')
+    const showQRCode = ref(false)
+    const qrCodeImage = ref('')
+    const showMockModal = ref(false)
+    const paymentResult = ref(null)
+
+    const showPayButton = computed(() => {
+      return order.value && order.value.status === 'PENDING' && !showQRCode.value && !paymentResult.value
     })
 
     const statusText = computed(() => {
-      const map = {
-        'PENDING': '待支付',
-        'PAID': '已支付',
-        'FAILED': '支付失败'
-      }
-      return map[order.status] || order.status
+      const statusMap = { 'PENDING': '待支付', 'PAID': '已支付', 'FAILED': '支付失败' }
+      return statusMap[order.value?.status] || order.value?.status
     })
 
-    const showPayButton = computed(() => {
-      if (!order.status) return false
-      if (order.status !== 'PENDING') return false
-      if (paymentResult.value) return false
-      return true
-    })
-
-    const formatTime = (timestamp) => {
-      if (!timestamp) return '-'
-      return new Date(timestamp).toLocaleString('zh-CN')
+    const formatTime = (time) => {
+      if (!time) return '-'
+      return new Date(time).toLocaleString('zh-CN')
     }
 
-    const fetchOrder = async () => {
-      const orderId = window.location.pathname.split('/').pop()
-      if (!orderId) {
-        loading.value = false
-        return
-      }
-
+    const loadOrder = async () => {
+      const orderId = route.params.orderId
       try {
-        const response = await getOrder(orderId)
-        if (response.data && response.data.code === 200) {
-          Object.assign(order, response.data.data)
+        const res = await getOrder(orderId)
+        if (res.data && res.data.success) {
+          order.value = res.data.data
+          if (order.value.status !== 'PENDING') {
+            paymentResult.value = { status: order.value.status === 'PAID' ? 'SUCCESS' : 'FAILED', paymentId: '' }
+          }
         } else {
-          errorMessage.value = response.data?.message || '订单查询失败'
+          errorMessage.value = '订单不存在'
         }
-      } catch (err) {
-        errorMessage.value = err.response?.data?.message || '网络错误'
+      } catch (error) {
+        errorMessage.value = '加载订单失败'
       } finally {
         loading.value = false
       }
     }
 
-    const handlePay = () => {
-      paymentModal.value = true
+    const handlePay = async () => {
+      if (payType.value === 'alipay') {
+        await createAlipayPayment()
+      } else {
+        showMockModal.value = true
+      }
+    }
+
+    const createAlipayPayment = async () => {
+      paying.value = true
+      errorMessage.value = ''
+      try {
+        const res = await createPayment({
+          orderId: order.value.orderId,
+          amount: Math.round(order.value.amount * 100),
+          payType: 'alipay'
+        })
+        if (res.data && res.data.success) {
+          qrCodeImage.value = res.data.data.qrCode
+          showQRCode.value = true
+        } else {
+          errorMessage.value = (res.data && res.data.message) || '创建支付失败'
+        }
+      } catch (error) {
+        errorMessage.value = '网络错误，请重试'
+        console.error(error)
+      } finally {
+        paying.value = false
+      }
+    }
+
+    const queryPayResult = async () => {
+      querying.value = true
+      errorMessage.value = ''
+      try {
+        const res = await queryPaymentStatus(order.value.orderId)
+        if (res.data && res.data.success) {
+          const status = res.data.data.status
+          if (status === 'SUCCESS') {
+            paymentResult.value = { status: 'SUCCESS', paymentId: res.data.data.paymentId }
+            showQRCode.value = false
+          } else if (status === 'FAILED') {
+            paymentResult.value = { status: 'FAILED', paymentId: res.data.data.paymentId }
+            showQRCode.value = false
+          } else {
+            errorMessage.value = '尚未支付成功，请稍后再试'
+          }
+        }
+      } catch (error) {
+        errorMessage.value = '查询失败，请重试'
+      } finally {
+        querying.value = false
+      }
+    }
+
+    const refreshQRCode = async () => {
+      await createAlipayPayment()
+    }
+
+    const cancelPay = () => {
+      showQRCode.value = false
     }
 
     const closeModal = () => {
-      paymentModal.value = false
+      showMockModal.value = false
     }
 
-    const confirmPayment = async () => {
+    const confirmMockPayment = async () => {
       processing.value = true
-      
       try {
-        const response = await createPayment({
-          orderId: order.orderId,
-          amount: order.amount
+        const res = await createPayment({
+          orderId: order.value.orderId,
+          amount: Math.round(order.value.amount * 100),
+          payType: 'mock'
         })
-        
-        if (response.data && response.data.code === 200) {
-          const data = response.data.data
-          paymentResult.value = {
-            status: data.status || 'SUCCESS',
-            amount: data.amount,
-            paymentId: data.paymentId,
-            message: response.data.message
-          }
+        if (res.data && res.data.success) {
+          paymentResult.value = res.data.data
+          showMockModal.value = false
         } else {
-          paymentResult.value = {
-            status: 'FAILED',
-            amount: order.amount,
-            paymentId: null,
-            message: response.data?.message || '支付失败'
-          }
+          errorMessage.value = (res.data && res.data.message) || '支付失败'
         }
-      } catch (err) {
-        paymentResult.value = {
-          status: 'FAILED',
-          amount: order.amount,
-          paymentId: null,
-          message: err.response?.data?.message || '支付请求失败'
-        }
+      } catch (error) {
+        errorMessage.value = '网络错误'
       } finally {
         processing.value = false
-        closeModal()
       }
     }
 
     const goBack = () => {
-      window.location.href = '/create'
+      router.push('/create')
     }
 
-    const queryStatus = () => {
-      window.location.href = `/query?orderId=${order.orderId}`
-    }
-
-    onMounted(() => {
-      fetchOrder()
-    })
+    onMounted(() => { loadOrder() })
 
     return {
-      order,
-      loading,
-      paying,
-      processing,
-      paymentModal,
-      paymentResult,
-      errorMessage,
-      paymentForm,
-      statusText,
-      showPayButton,
-      formatTime,
-      handlePay,
-      closeModal,
-      confirmPayment,
-      goBack,
-      queryStatus
+      order, loading, paying, processing, querying, errorMessage, payType,
+      showQRCode, qrCodeImage, showMockModal, paymentResult,
+      showPayButton, statusText, formatTime,
+      handlePay, queryPayResult, refreshQRCode, cancelPay,
+      closeModal, confirmMockPayment, goBack
     }
   }
 }
 </script>
 
 <style scoped>
-.container {
-  padding: 2rem;
-}
-
-.card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  color: #333;
-  margin-bottom: 1.5rem;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #667eea;
-  padding-bottom: 0.5rem;
-}
-
-.order-info {
-  margin-bottom: 1.5rem;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.info-row:last-child {
-  border-bottom: none;
-}
-
-.label {
-  color: #666;
-  font-weight: 500;
-}
-
-.value {
-  color: #333;
-  font-weight: 600;
-}
-
-.value.amount {
-  color: #e74c3c;
-  font-size: 1.25rem;
-}
-
-.status.pending {
-  color: #f39c12;
-}
-
-.status.paid {
-  color: #27ae60;
-}
-
-.status.failed {
-  color: #e74c3c;
-}
-
-.pay-section {
-  margin-top: 1rem;
-}
-
-.pay-btn {
-  width: 100%;
-  padding: 1rem;
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.pay-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
-}
-
-.pay-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  width: 90%;
-  max-width: 450px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #333;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: #999;
-  padding: 0 0.5rem;
-}
-
-.close-btn:hover {
-  color: #333;
-}
-
-.modal-body {
-  padding: 1.5rem;
-}
-
-.payment-info {
-  background: #f9f9f9;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
-}
-
-.payment-info p {
-  margin: 0.5rem 0;
-  color: #555;
-}
-
-.payment-form {
-  margin-bottom: 1rem;
-}
-
-.payment-form .form-group {
-  margin-bottom: 1rem;
-}
-
-.payment-form label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #555;
-}
-
-.payment-form input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 1rem;
-}
-
-.payment-form input:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.confirm-btn {
-  width: 100%;
-  padding: 1rem;
-  background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.confirm-btn:hover:not(:disabled) {
-  opacity: 0.9;
-}
-
-.confirm-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.result-section {
-  margin-top: 1.5rem;
-}
-
-.result-card {
-  padding: 2rem;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.result-card.success {
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
-}
-
-.result-card.failed {
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-}
-
-.result-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1rem;
-  font-size: 2rem;
-}
-
-.result-card.success .result-icon {
-  background: #27ae60;
-  color: white;
-}
-
-.result-card.failed .result-icon {
-  background: #e74c3c;
-  color: white;
-}
-
-.result-card h3 {
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.result-card p {
-  margin: 0.5rem 0;
-  color: #555;
-}
-
-.result-actions {
-  margin-top: 1.5rem;
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.back-btn,
-.query-btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.back-btn {
-  background: #6c757d;
-  color: white;
-}
-
-.back-btn:hover {
-  background: #5a6268;
-}
-
-.query-btn {
-  background: #667eea;
-  color: white;
-}
-
-.query-btn:hover {
-  background: #5a67d8;
-}
-
-.error-message {
-  margin-top: 1rem;
-  padding: 1rem;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
-  border-radius: 8px;
-  color: #721c24;
-}
-
-.loading-container {
-  text-align: center;
-  padding: 3rem;
-}
-
-.loading-container .loading {
-  width: 40px;
-  height: 40px;
-  border: 3px solid #667eea;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin: 0 auto 1rem;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem;
-  background: white;
-  border-radius: 12px;
-}
-
-.empty-state p {
-  margin-bottom: 1rem;
-  color: #666;
-}
+.container { max-width: 500px; margin: 0 auto; padding: 20px; }
+.card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 2px 12px rgba(0,0,0,0.1); }
+h2 { margin: 0 0 20px 0; color: #333; }
+.order-info { margin-bottom: 24px; }
+.info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.info-row:last-child { border-bottom: none; }
+.label { color: #666; }
+.value { color: #333; font-weight: 600; }
+.value.amount { color: #e74c3c; font-size: 24px; }
+.status.pending { color: #f39c12; }
+.status.paid { color: #27ae60; }
+.status.failed { color: #e74c3c; }
+.pay-section { margin-top: 20px; }
+.pay-type-selector { display: flex; gap: 12px; margin-bottom: 16px; }
+.pay-type-btn { flex: 1; padding: 16px; border: 2px solid #e0e0e0; border-radius: 8px; background: white; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.pay-type-btn.active { border-color: #667eea; background: #f0f4ff; }
+.pay-icon { font-size: 24px; }
+.pay-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; text-align: center; }
+.pay-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4); }
+.pay-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.qr-section { text-align: center; padding: 20px; margin-top: 20px; background: #f9f9f9; border-radius: 12px; }
+.qr-section h3 { margin: 0 0 16px 0; color: #333; }
+.qr-container { display: flex; justify-content: center; margin: 16px 0; }
+.qr-image { width: 250px; height: 250px; border: 2px solid #eee; border-radius: 8px; }
+.qr-tip { color: #666; font-size: 14px; margin: 8px 0; }
+.amount { font-size: 28px; font-weight: bold; color: #e74c3c; margin: 16px 0; }
+.qr-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.check-btn { padding: 10px 24px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.check-btn:hover:not(:disabled) { background: #219a52; }
+.check-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+.refresh-btn, .cancel-btn { padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.refresh-btn { background: #667eea; color: white; }
+.cancel-btn { background: #ddd; color: #666; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; border-radius: 12px; width: 90%; max-width: 400px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #eee; }
+.modal-header h3 { margin: 0; color: #333; }
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.modal-body { padding: 20px; }
+.payment-info { background: #f9f9f9; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+.payment-info p { margin: 8px 0; color: #555; }
+.mock-result { text-align: center; }
+.mock-result p { color: #666; margin-bottom: 16px; }
+.confirm-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; }
+.result-section { margin-top: 20px; }
+.result-card { padding: 24px; border-radius: 12px; text-align: center; }
+.result-card.success { background: #d4edda; border: 1px solid #c3e6cb; }
+.result-card.failed { background: #f8d7da; border: 1px solid #f5c6cb; }
+.result-icon { width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 32px; }
+.result-card.success .result-icon { background: #27ae60; color: white; }
+.result-card.failed .result-icon { background: #e74c3c; color: white; }
+.result-card h3 { margin-bottom: 16px; color: #333; }
+.result-card p { margin: 8px 0; color: #555; }
+.result-actions { margin-top: 20px; }
+.back-btn { padding: 12px 32px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.error-message { margin-top: 16px; padding: 12px; background: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24; text-align: center; }
+.loading-container { text-align: center; padding: 60px; }
+.loading { width: 20px; height: 20px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.empty-state { text-align: center; padding: 60px; background: white; border-radius: 12px; }
+.empty-state p { margin-bottom: 16px; color: #666; }
 </style>

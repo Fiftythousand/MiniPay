@@ -237,7 +237,7 @@ export default {
           } catch (e) { /* 暂无支付记录 */ }
 
           if (orderData.value.status === 'PENDING') {
-            startPolling()
+            // startPolling() // 已关闭轮询
           }
         } else {
           noResult.value = true
@@ -254,7 +254,7 @@ export default {
     }
 
     // --- 轮询机制 ---
-    const startPolling = () => {
+    const startPolling = () => { /* 已关闭轮询 */ return;
       if (pollingTimer) clearInterval(pollingTimer)
       pollingTimer = setInterval(async () => {
         try {

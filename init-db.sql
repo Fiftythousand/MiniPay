@@ -1,5 +1,4 @@
-
-CREATE DATABASE IF NOT EXISTS minipay_order;
+﻿CREATE DATABASE IF NOT EXISTS minipay_order;
 USE minipay_order;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -21,6 +20,7 @@ CREATE TABLE IF NOT EXISTS payments (
     order_id VARCHAR(64) NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
     status VARCHAR(32) NOT NULL DEFAULT 'PENDING',
+    trade_no VARCHAR(64),
     paid_at DATETIME,
     created_at DATETIME
 );
